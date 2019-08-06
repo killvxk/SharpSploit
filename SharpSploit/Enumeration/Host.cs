@@ -4,9 +4,9 @@
 
 using System;
 using System.IO;
+using System.Management;
 using System.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.Win32;
 
 using SharpSploit.Generic;
 
@@ -15,7 +15,7 @@ namespace SharpSploit.Enumeration
     /// <summary>
     /// Host is a library for local host enumeration.
     /// </summary>
-    public static class Host
+    public class Host
     {
         /// <summary>
         /// Gets a list of running processes on the system.
@@ -23,12 +23,16 @@ namespace SharpSploit.Enumeration
         /// <returns>List of ProcessResults.</returns>
         public static SharpSploitResultList<ProcessResult> GetProcessList()
         {
-			Process[] processes = Process.GetProcesses();
+            Process[] processes = Process.GetProcesses();
             SharpSploitResultList<ProcessResult> results = new SharpSploitResultList<ProcessResult>();
-			foreach (Process process in processes)
-			{
-                results.Add(new ProcessResult(process.Id, 0, process.ProcessName));
-			}
+            foreach (Process process in processes)
+            {
+                var search = new ManagementObjectSearcher("root\\CIMV2", string.Format("SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = {0}", process.Id));
+		        var pidresult = search.Get().GetEnumerator();
+                pidresult.MoveNext();
+                var parentId = (uint)pidresult.Current["ParentProcessId"];
+                results.Add(new ProcessResult(process.Id, Convert.ToInt32(parentId), process.ProcessName));
+            }
             return results;
         }
 
@@ -143,97 +147,35 @@ namespace SharpSploit.Enumeration
         /// <returns>List of FileSystemEntryResults.</returns>
 		public static SharpSploitResultList<FileSystemEntryResult> GetDirectoryListing()
 		{
+            return GetDirectoryListing(GetCurrentDirectory());
+		}
+
+        /// <summary>
+        /// Gets a directory listing of a directory.
+        /// </summary>
+        /// <param name="Path">The path of the directory to get a listing of.</param>
+        /// <returns>List of FileSystemEntryResults.</returns>
+		public static SharpSploitResultList<FileSystemEntryResult> GetDirectoryListing(string Path)
+        {
             SharpSploitResultList<FileSystemEntryResult> results = new SharpSploitResultList<FileSystemEntryResult>();
-			foreach (string dir in Directory.GetDirectories(GetCurrentDirectory()))
-			{
+            foreach (string dir in Directory.GetDirectories(Path))
+            {
                 results.Add(new FileSystemEntryResult(dir));
-			}
-            foreach (string file in Directory.GetFiles(GetCurrentDirectory()))
+            }
+            foreach (string file in Directory.GetFiles(Path))
             {
                 results.Add(new FileSystemEntryResult(file));
             }
             return results;
-		}
-
-        /// <summary>
-        /// Changes the current directory by appending a specified string to the current working directory.
-        /// </summary>
-        /// <param name="AppendDirectory">String to append to the current directory.</param>
-        public static void ChangeCurrentDirectory(string AppendDirectory)
-		{
-			Directory.SetCurrentDirectory(GetCurrentDirectory() + "\\" + AppendDirectory);
-		}
-
-        /// <summary>
-        /// Reads a value stored in registry.
-        /// </summary>
-        /// <param name="RegPath">The full path to the registry value to be read.</param>
-        /// <returns></returns>
-        public static string RegistryRead(string RegPath)
-        {
-            var split = RegPath.Split(Path.DirectorySeparatorChar);
-            string valueName = split[split.Length - 1];
-            string keyName = RegPath.Substring(0, RegPath.IndexOf(valueName));
-            return RegistryRead(keyName, valueName);
         }
 
         /// <summary>
-        /// Reads a value stored in registry.
+        /// Changes the current working directory.
         /// </summary>
-        /// <param name="RegKey">The RegistryKey to read from.</param>
-        /// <param name="RegValue">The name of name/value pair to read from in the RegistryKey.</param>
-        /// <returns></returns>
-        public static string RegistryRead(string RegKey, string RegValue)
+        /// <param name="DirectoryName">Relative or absolute path to new working directory.</param>
+        public static void ChangeCurrentDirectory(string DirectoryName)
         {
-            try
-            {
-                object reg = Registry.GetValue(RegKey, RegValue, null);
-                if (reg == null)
-                {
-                    return null;
-                }
-                return reg.ToString();
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine("Registry read exception: " + e.Message);
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Writes a value in the registry.
-        /// </summary>
-        /// <param name="RegPath">The full path to the registry value to be written to.</param>
-        /// <param name="Value">The value to write to the registry key.</param>
-        /// <returns></returns>
-        public static bool RegistryWrite(string RegPath, object Value)
-        {
-            var split = RegPath.Split(Path.DirectorySeparatorChar);
-            string valueName = split[split.Length - 1];
-            string keyName = RegPath.Substring(0, RegPath.IndexOf(valueName));
-            return RegistryWrite(keyName, valueName, Value);
-        }
-
-        /// <summary>
-        /// Writes a value in the registry.
-        /// </summary>
-        /// <param name="RegKey">The RegistryKey to read from.</param>
-        /// <param name="RegValue">The name of name/value pair to read from in the RegistryKey.</param>
-        /// <param name="Value">The value to write to the registry key.</param>
-        /// <returns></returns>
-        public static bool RegistryWrite(string RegKey, string RegValue, object Value)
-        {
-            try
-            {
-                Registry.SetValue(RegKey, RegValue, Value);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine("Registry write exception: " + e.Message);
-                return false;
-            }
+            Directory.SetCurrentDirectory(DirectoryName);
         }
 
         /// <summary>

@@ -7,13 +7,14 @@ using System.Linq;
 using System.Reflection;
 using System.Diagnostics;
 using System.Management.Automation;
+using System.Text;
 
 namespace SharpSploit.Execution
 {
     /// <summary>
     /// Shell is a library for executing shell commands.
     /// </summary>
-    public static class Shell
+    public class Shell
     {
         /// <summary>
         /// Executes specified PowerShell code using System.Management.Automation.dll and bypasses
@@ -77,6 +78,20 @@ namespace SharpSploit.Execution
         }
 
         /// <summary>
+        /// Executes a specified Shell command using cmd.exe, optionally with an alternative username and password.
+        /// Equates to `ShellExecute("cmd.exe /c " + ShellCommand)`.
+        /// </summary>
+        /// <param name="ShellCommand">The ShellCommand to execute, including any arguments.</param>
+        /// <param name="Username">Optional alternative username to execute ShellCommand as.</param>
+        /// <param name="Domain">Optional alternative Domain of the username to execute ShellCommand as.</param>
+        /// <param name="Password">Optional password to authenticate the username to execute the ShellCommand as.</param>
+        /// <returns>Ouput of the ShellCommand.</returns>
+        public static string ShellCmdExecute(string ShellCommand, string Username = "", string Domain = "", string Password = "")
+        {
+            return ShellExecute("cmd.exe /c " + ShellCommand, Username, Domain, Password);
+        }
+
+        /// <summary>
         /// Executes a specified Shell command from a specified directory, optionally with an alternative username and password.
         /// </summary>
         /// <param name="ShellCommand">The ShellCommand to execute, including any arguments.</param>
@@ -114,12 +129,19 @@ namespace SharpSploit.Execution
             shellProcess.StartInfo.UseShellExecute = false;
             shellProcess.StartInfo.CreateNoWindow = true;
             shellProcess.StartInfo.RedirectStandardOutput = true;
+            shellProcess.StartInfo.RedirectStandardError = true;
+
+            var output = new StringBuilder();
+            shellProcess.OutputDataReceived += (sender, args) => { output.AppendLine(args.Data); };
+            shellProcess.ErrorDataReceived += (sender, args) => { output.AppendLine(args.Data); };
+
             shellProcess.Start();
 
-            string output = shellProcess.StandardOutput.ReadToEnd();
+            shellProcess.BeginOutputReadLine();
+            shellProcess.BeginErrorReadLine();
             shellProcess.WaitForExit();
 
-            return output;
+            return output.ToString().TrimEnd();
         }
     }
 }

@@ -58,9 +58,14 @@
     <Compile Include="Enumeration\DomainTests.cs" />
     <Compile Include="Enumeration\HostTests.cs" />
     <Compile Include="Enumeration\NetworkTests.cs" />
+    <Compile Include="Enumeration\RegistryTests.cs" />
     <Compile Include="Execution\ShellCodeTests.cs" />
     <Compile Include="Execution\ShellTests.cs" />
+    <Compile Include="LateralMovement\DCOMTests.cs" />
     <Compile Include="LateralMovement\WMITests.cs" />
+    <Compile Include="Persistence\AutorunTests.cs" />
+    <Compile Include="Persistence\StartupTests.cs" />
+    <Compile Include="Persistence\WMITests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

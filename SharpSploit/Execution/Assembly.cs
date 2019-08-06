@@ -12,8 +12,23 @@ namespace SharpSploit.Execution
     /// <summary>
     /// Assembly is a library for loading .NET assemblies and executing methods contained within them.
     /// </summary>
-    public static class Assembly
+    public class Assembly
     {
+        /// <summary>
+        /// Loads a specified .NET assembly byte array and executes the EntryPoint.
+        /// </summary>
+        /// <param name="AssemblyBytes">The .NET assembly byte array.</param>
+        /// <param name="Args">The arguments to pass to the assembly's EntryPoint.</param>
+        public static void AssemblyExecute(byte[] AssemblyBytes, Object[] Args = null)
+        {
+            if (Args == null)
+            {
+                Args = new Object[] { new string[] { } };
+            }
+            Reflect.Assembly assembly = Load(AssemblyBytes);
+            assembly.EntryPoint.Invoke(null, Args);
+        }
+
         /// <summary>
         /// Loads a specified .NET assembly byte array and executes a specified method within a
         /// specified type with specified parameters.
@@ -43,7 +58,17 @@ namespace SharpSploit.Execution
         /// <returns>GenericObjectResult of the method.</returns>
         public static GenericObjectResult AssemblyExecute(String EncodedAssembly, String TypeName = "", String MethodName = "Execute", Object[] Parameters = default(Object[]))
         {
-            return AssemblyExecute(Convert.FromBase64String(EncodedAssembly));
+            return AssemblyExecute(Convert.FromBase64String(EncodedAssembly), TypeName, MethodName, Parameters);
+        }
+
+        /// <summary>
+        /// Loads a specified base64-encoded .NET assembly and executes the EntryPoint.
+        /// </summary>
+        /// <param name="EncodedAssembly">The base64-encoded .NET assembly byte array.</param>
+        /// <param name="Args">The arguments to pass to the assembly's EntryPoint.</param>
+        public static void AssemblyExecute(String EncodedAssembly, Object[] Args = default(Object[]))
+        {
+            AssemblyExecute(Convert.FromBase64String(EncodedAssembly), Args);
         }
 
         /// <summary>
